@@ -8,9 +8,7 @@ from app.models import Item, ItemCreate, User, UserCreate, UserUpdate
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
-    db_obj = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(user_create.password)}
-    )
+    db_obj = User.model_validate(user_create)
     session.add(db_obj)
     session.commit()
     session.refresh(db_obj)
@@ -20,10 +18,12 @@ def create_user(*, session: Session, user_create: UserCreate) -> User:
 def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
     user_data = user_in.model_dump(exclude_unset=True)
     extra_data = {}
-    if "password" in user_data:
-        password = user_data["password"]
-        hashed_password = get_password_hash(password)
-        extra_data["hashed_password"] = hashed_password
+    if "otp" in user_data and user_data["otp"] is not None:
+        otp = user_data["otp"]
+        hashed_otp = get_password_hash(otp)
+        extra_data["hashed_otp"] = hashed_otp
+    elif "otp" in user_data and user_data["otp"] is None:
+        extra_data["hashed_otp"] = None
     db_user.sqlmodel_update(user_data, update=extra_data)
     session.add(db_user)
     session.commit()
@@ -37,11 +37,11 @@ def get_user_by_phone_number(*, session: Session, phone_number: str) -> User | N
     return session_user
 
 
-def authenticate(*, session: Session, phone_number: str, password: str) -> User | None:
+def authenticate(*, session: Session, phone_number: str, otp: str) -> User | None:
     db_user = get_user_by_phone_number(session=session, phone_number=phone_number)
     if not db_user:
         return None
-    if not verify_password(password, db_user.hashed_password):
+    if not verify_password(otp, db_user.hashed_otp):
         return None
     return db_user
 
