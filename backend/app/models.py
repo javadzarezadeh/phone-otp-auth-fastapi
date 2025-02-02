@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -13,19 +14,21 @@ class UserBase(SQLModel):
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
-    password: str = Field(min_length=8, max_length=40)
+    pass
+    # otp: str = Field(max_length=6)
 
 
-class UserRegister(SQLModel):
-    phone_number: str = Field(max_length=20)
-    password: str = Field(min_length=8, max_length=40)
-    full_name: str | None = Field(default=None, max_length=255)
+# class UserRegister(SQLModel):
+#     phone_number: str = Field(max_length=20)
+#     otp: str = Field(max_length=6)
+#     # full_name: str | None = Field(default=None, max_length=255)
 
 
 # Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
     phone_number: str | None = Field(default=None, max_length=20)  # type: ignore
-    password: str | None = Field(default=None, min_length=8, max_length=40)
+    otp: str | None = Field(default=None, max_length=6)
+    otp_expires_at: datetime | None = Field(default=None)
 
 
 class UserUpdateMe(SQLModel):
@@ -33,15 +36,16 @@ class UserUpdateMe(SQLModel):
     phone_number: str | None = Field(default=None, max_length=20)
 
 
-class UpdatePassword(SQLModel):
-    current_password: str = Field(min_length=8, max_length=40)
-    new_password: str = Field(min_length=8, max_length=40)
+# class UpdatePassword(SQLModel):
+#     current_password: str = Field(min_length=8, max_length=40)
+#     new_password: str = Field(min_length=8, max_length=40)
 
 
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    hashed_password: str
+    hashed_otp: str | None = Field(default=None, nullable=True)
+    otp_expires_at: datetime | None = Field(default=None, nullable=True)
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
 
@@ -108,6 +112,6 @@ class TokenPayload(SQLModel):
     sub: str | None = None
 
 
-class NewPassword(SQLModel):
-    token: str
-    new_password: str = Field(min_length=8, max_length=40)
+# class NewPassword(SQLModel):
+#     token: str
+#     new_password: str = Field(min_length=8, max_length=40)
